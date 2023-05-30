@@ -51,6 +51,7 @@ import com.example.inventory.R
 import com.example.inventory.ui.AppViewModelProvider
 import com.example.inventory.ui.navigation.NavigationDestination
 import com.example.inventory.ui.theme.InventoryTheme
+import kotlinx.coroutines.launch
 
 object ItemDetailsDestination : NavigationDestination {
     override val route = "item_details"
@@ -67,6 +68,7 @@ fun ItemDetailsScreen(
     viewModel: ItemDetailsViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
     val uiState = viewModel.uiState.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
     Scaffold(
         topBar = {
             InventoryTopAppBar(
@@ -77,7 +79,7 @@ fun ItemDetailsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { navigateToEditItem(0) },
+                onClick = { navigateToEditItem(uiState.value.id) },
                 modifier = Modifier.navigationBarsPadding()
             ) {
                 Icon(
@@ -91,7 +93,12 @@ fun ItemDetailsScreen(
         ItemDetailsBody(
             itemUiState = uiState.value,
             onSellItem = { viewModel.reduceQuantityByOne() },
-            onDelete = { },
+            onDelete = {
+                       coroutineScope.launch {
+                           viewModel.deleteItem()
+                           navigateBack()
+                       }
+            },
             modifier = modifier.padding(innerPadding)
         )
     }
@@ -111,7 +118,7 @@ private fun ItemDetailsBody(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         var deleteConfirmationRequired by rememberSaveable { mutableStateOf(false) }
-        val coroutineScope = rememberCoroutineScope()
+
         ItemInputForm(itemUiState = itemUiState, enabled = false)
         Button(
             onClick = onSellItem,
